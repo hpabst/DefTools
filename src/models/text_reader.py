@@ -15,8 +15,14 @@ class TextReader():
         # So have fun matching it up.
         iteminfo = dict()
         splititem = item_str.split(":")
+        if len(splititem) < 14:
+            raise Exception("Item string does not contain the minimum number of entries. {0} found when at least 14 should exist.".format(len(splititem)))
         iteminfo["item"] = splititem[0]
         iteminfo["itemID"] = splititem[1]
+        if iteminfo["itemID"] == "":
+            raise Exception("Item string does not contain required item ID.")
+        elif not iteminfo["itemID"].isdigit():
+            raise Exception("Item ID is not base-10 digit string. Got {0} instead.".format(iteminfo["itemID"]))
         iteminfo["enchantID"] = splititem[2]
         iteminfo["gemID1"] = splititem[3]
         iteminfo["gemID2"] = splititem[4]
@@ -24,7 +30,7 @@ class TextReader():
         iteminfo["gemID4"] = splititem[6]
         iteminfo["suffixID"] = splititem[7]
         iteminfo["uniqueID"] = splititem[8]
-        iteminfo["linkLeveL"] = splititem[9]
+        iteminfo["linkLevel"] = splititem[9]
         iteminfo["specializationID"] = splititem[10]
         iteminfo["upgradeTypeID"] = splititem[11]
         iteminfo["instanceDifficultyID"] = splititem[12]
