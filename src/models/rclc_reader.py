@@ -59,29 +59,30 @@ class RCLCReader(TextReader):
             iteminfo = self.unpack_item_string(item.split("|")[2])
             existing_loot = session.query(Loot)\
                             .filter(Loot.item_id == int(iteminfo["itemID"])).all()
-            new_loot = LootAward(reason = response, player = player, date = datetime.strptime(date, "%d/%m/%y"))
+            new_time = datetime.strptime(date, "%d/%m/%y")
+            new_loot = LootAward(reason = response, players = player, award_date = new_time)
             session.add(new_loot)
             if len(existing_loot) == 1:
-                new_loot.item = existing_loot[0]
+                new_loot.item_rel = existing_loot[0]
             elif len(existing_loot) > 1:
                 session.rollback()
                 raise Exception("Multiple loot instances of item {0} found.".format(existing_loot[0].item_id))
             else:
                 _loot = Loot(item_id = int(iteminfo["itemID"]), instance = instance_id)
                 session.add(_loot)
-                new_loot.item = _loot
+                new_loot.item_rel = _loot
             if gear1 != "nil":
                 gear1info = self.unpack_item_string(gear1.split("|")[2])
                 existing_gear1 = session.query(Loot).filter(Loot.item_id == int(gear1info["itemID"])).all()
                 if len(existing_gear1) == 1:
-                    new_loot.replacement1 = existing_gear1[0]
+                    new_loot.replacement1_rel = existing_gear1[0]
                 elif len(existing_gear1) > 1:
                     session.rollback()
                     raise Exception("Multiple loot instances of item {0} found.".format(existing_gear1[0].item_id))
                 else:
                     _replacement1 = Loot(item_id=int(gear1info["itemID"]), instance=-1)
                     session.add(_replacement1)
-                    new_loot.replacement1 = _replacement1
+                    new_loot.replacement1_rel = _replacement1
             else:
                 new_loot.replacement1 = None
             if gear2 != "nil":
@@ -89,14 +90,14 @@ class RCLCReader(TextReader):
                 existing_gear2 = session.query(Loot) \
                     .filter(Loot.item_id == int(gear2info["itemID"])).all()
                 if len(existing_gear2) == 1:
-                    new_loot.replacement1 = existing_gear2[0]
+                    new_loot.replacement1_rel = existing_gear2[0]
                 elif len(existing_gear2) > 1:
                     session.rollback()
                     raise Exception("Multiple loot instances of item {0} found.".format(existing_gear2[0].item_id))
                 else:
                     _replacement2 = Loot(item_id=int(gear2info["itemID"]), instance=-1)
                     session.add(_replacement2)
-                    new_loot.replacement1 = _replacement2
+                    new_loot.replacement2_rel = _replacement2
             else:
                 new_loot.replacement2 = None
             objects.append(new_loot)
