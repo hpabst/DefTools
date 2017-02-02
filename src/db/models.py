@@ -1,6 +1,6 @@
 import os
 import sys
-from sqlalchemy import Column, ForeignKey, Integer, String, Boolean, UniqueConstraint, Date
+from sqlalchemy import Column, ForeignKey, Integer, String, Boolean, UniqueConstraint, Date, VARCHAR
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import  relationship, sessionmaker
 from sqlalchemy import create_engine
@@ -35,15 +35,16 @@ class Loot(Base):
 class LootAward(Base):
     __tablename__ = "lootaward"
     id = Column(Integer, primary_key=True)
-    reason = Column(Integer)
-    date = Column(Date)
+    reason = Column(VARCHAR)
+    award_date = Column(Date)
     item = Column(Integer, ForeignKey('loot.id'))
+    item_rel = relationship(Loot, foreign_keys=[item])
     replacement1 = Column(Integer, ForeignKey('loot.id'), nullable = True)
     replacement2 = Column(Integer, ForeignKey('loot.id'), nullable = True)
-    replacements1 = relationship(Loot, foreign_keys=[replacement1])
-    replacements2 = relationship(Loot, foreign_keys=[replacement2])
+    replacement1_rel = relationship(Loot, foreign_keys=[replacement1])
+    replacement2_rel = relationship(Loot, foreign_keys=[replacement2])
     player = Column(Integer, ForeignKey('player.id'))
-    players = relationship(Player, foreign_keys=[player])
+    player_rel = relationship(Player, foreign_keys=[player])
 
     def __repr__(self):
         return "<LootAward(item='{0}', reason='{1}', player='{2}')>".format(self.item, self.reason, self.player)

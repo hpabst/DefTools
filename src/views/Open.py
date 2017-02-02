@@ -1,6 +1,7 @@
 from Tkinter import *
 from ttk import Frame, Button, Style, Entry, Scale
 from models.rclc_reader import RCLCReader
+from sqlalchemy.orm import Session
 
 
 class Open(Frame):
@@ -36,5 +37,7 @@ class Open(Frame):
     def submit_text(self):
         text = self.txtCsv.get("1.0", END)
         reader = RCLCReader()
-        db_objects = reader.read_csv_text(text)
+        session = Session()
+        db_objects = reader.read_csv_text(text, session)
+        session.commit()
         return

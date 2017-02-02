@@ -1,8 +1,9 @@
 
 
 class DBConst:
-    engine = None
-    session = None
+    conn_str = 'sqlite:///db/deftools.db'
+    test_conn_str = 'sqlite:///../src/db/deftools_test.db'
+
 
 
 class Codes:
