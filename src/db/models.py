@@ -22,11 +22,7 @@ class Loot(Base):
     __tablename__ = "loot"
     id = Column(Integer, primary_key=True)
     item_id = Column(Integer) #actual ID of the item in-game
-    #ilvl = Column(Integer, nullable=True) #ilvl of the item
-    #socket = Column(Boolean, nullable=True) #whether the item has a socket
     instance = Column(Integer) #zone the item comes from
-    #difficulty = Column(Integer) #difficulty the item dropped at
-    #boss = Column(Integer) #ID of encounter item comes from
 
     def __repr__(self):
         return "<Loot(item_id='{0}', instance='{1}')>"\
