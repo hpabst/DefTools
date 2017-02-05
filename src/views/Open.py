@@ -1,9 +1,11 @@
 from Tkinter import *
 from ttk import Frame, Button, Style, Entry, Scale
 from models.rclc_reader import RCLCReader
+from models.gsheets_writer import GSheetsWriter
 from sqlalchemy.orm import Session
 import ConfigParser
-
+import re
+import tkMessageBox
 
 class Open(Frame):
 
@@ -51,4 +53,12 @@ class Open(Frame):
         session = Session()
         db_objects = reader.read_csv_text(text, session)
         session.commit()
+        id_regex = "/spreadsheets/d/([a-zA-Z0-9-_]+)"
+        id = re.search(id_regex, self.sheetUrl.get())
+        if len(id.groups()) == 0:
+            tkMessageBox.showerror("Error", "A valid google sheet ID could not be determined.")
+        else:
+            writer = GSheetsWriter(spreadsheet_id=id.group(1))
+            writer.update_loot_spreadsheet(session)
+
         return
