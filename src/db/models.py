@@ -22,6 +22,7 @@ class Loot(Base):
     __tablename__ = "loot"
     id = Column(Integer, primary_key=True)
     item_id = Column(Integer) #actual ID of the item in-game
+    name = Column(String(250), default="Unknown")
     instance = Column(Integer) #zone the item comes from
 
     def __repr__(self):

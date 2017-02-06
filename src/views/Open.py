@@ -60,5 +60,5 @@ class Open(Frame):
         else:
             writer = GSheetsWriter(spreadsheet_id=id.group(1))
             writer.update_loot_spreadsheet(session)
-
+            tkMessageBox.showinfo("", "Loot data has been uploaded to google spreadsheet.")
         return

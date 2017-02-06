@@ -1,7 +1,9 @@
 from apiclient import discovery
 from oauth2client import client, tools
 from oauth2client.file import Storage
-from db.models import Player
+from db.models import Player, Loot, LootAward
+from googleapiclient.errors import HttpError
+import datetime
 import httplib2
 import os
 
@@ -20,11 +22,76 @@ class GSheetsWriter:
         return
 
     def __clear_existing_spreadsheet(self, session):
+        requests = []
         sheets_metadata = self.__service.spreadsheets().get(spreadsheetId=self.ss_id).execute()
         sheets = sheets_metadata.get('sheets', '')
+        maindata = sheets.pop(0) #Can't delete the last sheet in a spreadsheet, so we leave the last one and clear it instead.
+        for sheet in sheets:
+            sheet_id = sheet.get("properties").get("sheetId")
+            requests.append({
+                'deleteSheet':{
+                    'sheetId':sheet_id
+                }
+            })
+        requests.append({
+            "updateCells":{
+                "range":{
+                    "sheetId":maindata.get("properties").get("sheetId")
+                },
+                "fields" : "userEnteredValue"
+            }
+        })
+        body = {
+            'requests': requests
+        }
+        try:
+            response = self.__service.spreadsheets().batchUpdate(spreadsheetId=self.ss_id, body=body).execute()
+        except HttpError as h:
+            raise h
         return
 
     def __create_summary_sheet(self, session):
+        values = []
+        data = []
+        sheets_metadata = self.__service.spreadsheets().get(spreadsheetId=self.ss_id).execute()
+        sheets = sheets_metadata.get('sheets', '')
+        maindata = sheets[0]
+        maindata_id = maindata.get("properties").get("sheetId")
+        all_players = session.query(Player).order_by(Player.name).all()
+        values.append(["Player", "Reward", "Reason", "Date", "Replacement1", "Replacement2"])
+        data.append({
+            'range': 'A1:F1',
+            'values': [["Player", "Reward", "Reason", "Date", "Replacement1", "Replacement2"]]
+        })
+        row_counter = 2
+        for player in all_players:
+            player_str = "{0}-{1}".format(player.name, player.realm)
+            awards = session.query(LootAward).filter(LootAward.player_rel == player).order_by(LootAward.award_date).all()
+            for award in awards:
+                item = award.item_rel
+                replace1 = award.replacement1_rel
+                replace2 = award.replacement2_rel
+                replace2_str = "None"
+                if replace2 is not None: #replacement2 may be null in the DB since it's an optional
+                    replace2_str = "=HYPERLINK(\"wowhead.com/item={0}\",\"{1}\")".format(replace2.item_id, replace2.name)
+                data.append({
+                    'range': 'A{0}:F{0}'.format(row_counter),
+                    'values': [[player_str, "=HYPERLINK(\"wowhead.com/item={0}\",\"{1}\")".format(item.item_id, item.name),
+                               award.reason, award.award_date.strftime('%m/%d/%Y'),
+                               "=HYPERLINK(\"wowhead.com/item={0}\",\"{1}\")".format(replace1.item_id, replace1.name),
+                               replace2_str
+                               ]]
+                })
+                row_counter += 1
+        body = {
+            'valueInputOption': 'USER_ENTERED',
+            'data': data
+        }
+        try:
+            result = self.__service.spreadsheets().values().batchUpdate(spreadsheetId=self.ss_id,
+                                                                        body=body).execute()
+        except HttpError as h:
+            raise h
         return
 
     def __create_all_user_sheets(self, session):
@@ -45,6 +112,7 @@ class GSheetsWriter:
 
             Returns:
                 Credentials, the obtained credential.
+            Adapted from google's quickstart guide.
         """
 
         # If modifying these scopes, delete your previously saved credentials
@@ -75,11 +143,9 @@ class GSheetsWriter:
         return credentials
 
     def __get_service(self):
-        """Shows basic usage of the Sheets API.
-
-            Creates a Sheets API service object and prints the names and majors of
-            students in a sample spreadsheet:
-            https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit
+        """
+            Creates a Sheets API service object.
+           Adapted from google's quickstart guide.
         """
         credentials = self.__get_credentials()
         http = credentials.authorize(httplib2.Http())
