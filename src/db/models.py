@@ -1,6 +1,6 @@
 import os
 import sys
-from sqlalchemy import Column, ForeignKey, Integer, String, Boolean, UniqueConstraint, Date, VARCHAR
+from sqlalchemy import Column, ForeignKey, Integer, String, Boolean, UniqueConstraint, Date, VARCHAR, Table
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import  relationship, sessionmaker
 from sqlalchemy import create_engine
@@ -18,16 +18,30 @@ class Player(Base):
     def __repr__(self):
         return "<Player(name='{0}', realm='{1}')>".format(self.name, self.realm)
 
+
 class Loot(Base):
     __tablename__ = "loot"
     id = Column(Integer, primary_key=True)
     item_id = Column(Integer) #actual ID of the item in-game
     name = Column(String(250), default="Unknown")
     instance = Column(Integer) #zone the item comes from
+    bonus_ids = relationship("BonusID")
 
     def __repr__(self):
         return "<Loot(item_id='{0}', instance='{1}')>"\
             .format(self.item_id, self.instance)
+
+class BonusID(Base):
+    __tablename__ = "bonusid"
+    id = Column(Integer, primary_key=True)
+    bonus_id = Column(Integer)
+    loot_parent = Column(Integer, ForeignKey("loot.id"))
+
+
+
+    def __repr__(self):
+        return "BonusID(bonus_id='{0}', id_effect='{1}')>".format(self.bonus_id, self.id_effect)
+
 
 class LootAward(Base):
     __tablename__ = "lootaward"

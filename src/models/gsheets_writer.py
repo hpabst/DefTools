@@ -65,20 +65,23 @@ class GSheetsWriter:
         })
         row_counter = 2
         for player in all_players:
-            player_str = "{0}-{1}".format(player.name, player.realm)
+            player_str = u"{0}-{1}".format(player.name, player.realm)
             awards = session.query(LootAward).filter(LootAward.player_rel == player).order_by(LootAward.award_date).all()
             for award in awards:
                 item = award.item_rel
                 replace1 = award.replacement1_rel
                 replace2 = award.replacement2_rel
+                replace1_str = "None"
                 replace2_str = "None"
+                if replace1 is not None:
+                    replace1_str = u"=HYPERLINK(\"wowhead.com/item={0}\",\"{1}\")".format(replace1.item_id, replace1.name)
                 if replace2 is not None: #replacement2 may be null in the DB since it's an optional
-                    replace2_str = "=HYPERLINK(\"wowhead.com/item={0}\",\"{1}\")".format(replace2.item_id, replace2.name)
+                    replace2_str = u"=HYPERLINK(\"wowhead.com/item={0}\",\"{1}\")".format(replace2.item_id, replace2.name)
                 data.append({
                     'range': 'A{0}:F{0}'.format(row_counter),
-                    'values': [[player_str, "=HYPERLINK(\"wowhead.com/item={0}\",\"{1}\")".format(item.item_id, item.name),
+                    'values': [[player_str, u"=HYPERLINK(\"wowhead.com/item={0}\",\"{1}\")".format(item.item_id, item.name),
                                award.reason, award.award_date.strftime('%m/%d/%Y'),
-                               "=HYPERLINK(\"wowhead.com/item={0}\",\"{1}\")".format(replace1.item_id, replace1.name),
+                               replace1_str,
                                replace2_str
                                ]]
                 })
