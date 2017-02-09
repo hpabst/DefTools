@@ -104,6 +104,60 @@ class GSheetsWriter:
         return
 
     def __create_user_sheet(self, session, user):
+        sheetName = u"{0}-{1}".format(user.name, user.realm)
+        request = []
+        request.append({
+            "addSheet":{
+                "properties":{
+                    "title": sheetName
+                }
+            }
+        })
+
+        body = {
+            "requests":request
+        }
+        try:
+            response = self.__service.spreadsheets().batchUpdate(spreadsheetId=self.ss_id, body=body).execute()
+        except HttpError as h:
+            raise h
+        sheetID = response.get("replies")[0].get("addSheet").get("properties").get("sheetId")
+        awards = session.query(LootAward).filter(LootAward.player_rel == user).order_by(LootAward.award_date).all()
+        row_counter = 2
+        player_str = u"{0}-{1}".format(user.name, user.realm)
+        data = []
+        data.append({
+            'range': u'{0}!A1:F1'.format(sheetName),
+            'values': [["Player", "Reward", "Reason", "Date", "Replacement1", "Replacement2"]]
+        })
+        for award in awards:
+            item = award.item_rel
+            replace1 = award.replacement1_rel
+            replace2 = award.replacement2_rel
+            replace1_str = "None"
+            replace2_str = "None"
+            if replace1 is not None:
+                replace1_str = u"=HYPERLINK(\"wowhead.com/item={0}\",\"{1}\")".format(replace1.item_id, replace1.name)
+            if replace2 is not None:  # replacement2 may be null in the DB since it's an optional
+                replace2_str = u"=HYPERLINK(\"wowhead.com/item={0}\",\"{1}\")".format(replace2.item_id, replace2.name)
+            data.append({
+                'range': u'{0}!A{1}:F{1}'.format(sheetName, row_counter),
+                'values': [[player_str, u"=HYPERLINK(\"wowhead.com/item={0}\",\"{1}\")".format(item.item_id, item.name),
+                            award.reason, award.award_date.strftime('%m/%d/%Y'),
+                            replace1_str,
+                            replace2_str
+                            ]]
+            })
+            row_counter += 1
+        body = {
+            'valueInputOption':'USER_ENTERED',
+            'data':data
+        }
+        try:
+            response = self.__service.spreadsheets().values().batchUpdate(spreadsheetId=self.ss_id,
+                                                                        body=body).execute()
+        except HttpError as h:
+            raise h
         return
 
 
