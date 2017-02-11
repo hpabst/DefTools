@@ -1,11 +1,13 @@
+import os
+import time
+
+import httplib2
 from apiclient import discovery
+from googleapiclient.errors import HttpError
 from oauth2client import client, tools
 from oauth2client.file import Storage
-from db.models import Player, Loot, LootAward
-from googleapiclient.errors import HttpError
-import datetime
-import httplib2
-import os
+
+from db.models import Player, LootAward
 
 
 class GSheetsWriter:
@@ -50,20 +52,114 @@ class GSheetsWriter:
             raise h
         return
 
+    def __get__cell_borders_request(self, sheetId, start_row_index = 0, end_row_index = 6,
+                                    start_col_index = 0, end_col_index = 6):
+        request = {
+            "updateBorders":{
+                "range":{
+                    "sheetId":sheetId,
+                    "startRowIndex":start_row_index,
+                    "endRowIndex":end_row_index,
+                    "startColumnIndex":start_col_index,
+                    "endColumnIndex":end_col_index
+                },
+                "top":{
+                    "style":"SOLID",
+                    "width":1
+                },
+                "bottom":{
+                    "style": "SOLID",
+                    "width": 1
+                },
+                "left":{
+                    "style": "SOLID",
+                    "width": 1
+                },
+                "right":{
+                    "style": "SOLID",
+                    "width": 1
+                },
+                "innerHorizontal":{
+                    "style": "SOLID",
+                    "width": 1
+                },
+                "innerVertical":{
+                    "style": "SOLID",
+                    "width": 1
+                }
+            }
+        }
+        return request
+
+    def __get_column_width_request(self, sheetId):
+        request = {
+            "updateDimensionProperties": {
+                "range": {
+                    "sheetId": sheetId,
+                    "dimension": "COLUMNS",
+                    "startIndex": 0,
+                    "endIndex": 6
+                },
+                "properties": {
+                    "pixelSize": 160
+                },
+                "fields": "pixelSize"
+            }
+        }
+        return request
+
+    def __get_header_row_style_request(self, sheetId, startIndex = 0, endIndex = 6):
+        request = {
+            "repeatCell":{
+                "range":{
+                    "sheetId":sheetId,
+                    "startRowIndex":0,
+                    "endRowIndex":1,
+                    "startColumnIndex":startIndex,
+                    "endColumnIndex":endIndex
+                },
+                "cell":{
+                    "userEnteredFormat":{
+                        "backgroundColor":{
+                            "red":0.0,
+                            "green":0.0,
+                            "blue":0.0
+                        },
+                        "horizontalAlignment":"CENTER",
+                        "textFormat":{
+                            "foregroundColor":{
+                                "red":1.0,
+                                "green":1.0,
+                                "blue":1.0
+                            },
+                            "fontSize":12,
+                            "bold":True
+                        }
+                    }
+                },
+                "fields":"userEnteredFormat(backgroundColor, textFormat, horizontalAlignment)"
+            }
+        }
+        return request
+
     def __create_summary_sheet(self, session):
-        values = []
+        style_requests = []
         data = []
         sheets_metadata = self.__service.spreadsheets().get(spreadsheetId=self.ss_id).execute()
         sheets = sheets_metadata.get('sheets', '')
         maindata = sheets[0]
         maindata_id = maindata.get("properties").get("sheetId")
         all_players = session.query(Player).order_by(Player.name).all()
-        values.append(["Player", "Reward", "Reason", "Date", "Replacement1", "Replacement2"])
         data.append({
             'range': 'A1:F1',
             'values': [["Player", "Reward", "Reason", "Date", "Replacement1", "Replacement2"]]
         })
-        row_counter = 2
+        data.append({
+            "range":"I1:K1",
+            "values":[["Player", "Recent Gear Count (2 Weeks)", "Overall Gear Count"]]
+        })
+        data_row_counter = 2
+        summary_row_counter = 2
         for player in all_players:
             player_str = u"{0}-{1}".format(player.name, player.realm)
             awards = session.query(LootAward).filter(LootAward.player_rel == player).order_by(LootAward.award_date).all()
@@ -78,14 +174,23 @@ class GSheetsWriter:
                 if replace2 is not None: #replacement2 may be null in the DB since it's an optional
                     replace2_str = u"=HYPERLINK(\"wowhead.com/item={0}\",\"{1}\")".format(replace2.item_id, replace2.name)
                 data.append({
-                    'range': 'A{0}:F{0}'.format(row_counter),
+                    'range': 'A{0}:F{0}'.format(data_row_counter),
                     'values': [[player_str, u"=HYPERLINK(\"wowhead.com/item={0}\",\"{1}\")".format(item.item_id, item.name),
-                               award.reason, award.award_date.strftime('%m/%d/%Y'),
+                               award.reason,
+                                award.award_date.strftime('%m/%d/%Y'),
                                replace1_str,
                                replace2_str
                                ]]
                 })
-                row_counter += 1
+                data_row_counter += 1
+            data.append({
+                "range":"I{0}:K{0}".format(summary_row_counter),
+                "values":[[player_str,
+                           u"=COUNTIFS(A:A, \"={0}\", D:D, \">\"&today()-14)".format(player_str),
+                           u"=COUNTIF(A:A, \"={0}\")".format(player_str)
+                           ]]
+            })
+            summary_row_counter += 1
         body = {
             'valueInputOption': 'USER_ENTERED',
             'data': data
@@ -95,12 +200,42 @@ class GSheetsWriter:
                                                                         body=body).execute()
         except HttpError as h:
             raise h
+        style_requests.append(self.__get_header_row_style_request(sheetId=maindata_id))
+        style_requests.append(self.__get_header_row_style_request(sheetId=maindata_id, startIndex=7, endIndex=11))
+        style_requests.append(self.__get_column_width_request(sheetId=maindata_id))
+        style_requests.append(self.__get__cell_borders_request(sheetId=maindata_id,
+                                                               start_row_index=1,
+                                                               end_row_index=data_row_counter-1))
+        style_requests.append(self.__get__cell_borders_request(sheetId=maindata_id,
+                                                               start_row_index=1,
+                                                               end_row_index=summary_row_counter-1,
+                                                               start_col_index=8,
+                                                               end_col_index=11))
+        body = {
+            "requests":style_requests
+        }
+        try:
+            result = self.__service.spreadsheets().batchUpdate(spreadsheetId=self.ss_id,
+                                                               body=body).execute()
+        except HttpError as h:
+            raise h
         return
 
     def __create_all_user_sheets(self, session):
         users = session.query(Player).order_by(Player.name).all()
+        style_requests = []
         for user in users:
-            self.__create_user_sheet(session, user)
+            id = self.__create_user_sheet(session, user)
+            time.sleep(0.1)#We delay things because otherwise we get 429 errors from google.
+            style_requests.append(self.__get_column_width_request(sheetId=id))
+            style_requests.append(self.__get_header_row_style_request(sheetId=id))
+        body = {
+            "requests":style_requests
+        }
+        try:
+            response = self.__service.spreadsheets().batchUpdate(spreadsheetId=self.ss_id, body=body).execute()
+        except HttpError as h:
+            raise h
         return
 
     def __create_user_sheet(self, session, user):
@@ -158,7 +293,18 @@ class GSheetsWriter:
                                                                         body=body).execute()
         except HttpError as h:
             raise h
-        return
+        border_request = []
+        border_request.append(self.__get__cell_borders_request(sheetId=sheetID,start_row_index=1,
+                                                                end_row_index=row_counter-1))
+        body = {
+            "requests":border_request
+        }
+        try:
+            response = self.__service.spreadsheets().batchUpdate(spreadsheetId=self.ss_id,
+                                                                        body=body).execute()
+        except HttpError as h:
+            raise h
+        return sheetID
 
 
     def __get_credentials(self):

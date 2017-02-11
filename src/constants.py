@@ -4,6 +4,34 @@ class DBConst:
     conn_str = 'sqlite:///db/deftools.db'
     test_conn_str = 'sqlite:///../src/db/deftools_test.db'
 
+class ClassColours:
+    dk_rgb = (196, 31, 59)
+    dh_rgb = (163, 48, 201)
+    druid_rgb = (255, 125, 10)
+    hunter_rgb = (171, 212, 115)
+    mage_rgb = (105, 204, 240)
+    monk_rgb = (0, 255, 150)
+    paladin_rgb = (245, 140, 186)
+    priest_rgb = (255, 255, 255)
+    rogue_rgb = (255, 245, 105)
+    shaman_rgb = (0, 112, 222)
+    warlock_rgb = (148, 130, 201)
+    warrior_rgb = (199, 156, 110)
+
+    dk_hex = "#C41F3B"
+    dh_hex = "#A330C9"
+    druid_hex = "#FF7D0A"
+    hunter_hex = "#ABD473"
+    mage_hex = "#69CCF0"
+    monk_hex = "#00FF96"
+    paladin_hex = "#F58CBA"
+    priest_hex = "#FFFFFF"
+    rogue_hex = "#FFF569"
+    shaman_hex = "#0070DE"
+    warlock_hex = "#9482C9"
+    warrior_hex = "#C79C6E"
+
+
 
 
 class Codes:
