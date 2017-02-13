@@ -2,6 +2,7 @@ from db.models import Player, Loot, LootAward, BonusID
 from constants import DBConst, Codes
 from text_reader import TextReader
 from datetime import datetime
+from bnet import BNet
 from sqlalchemy.orm import Session
 import warnings
 import re
@@ -194,7 +195,9 @@ class RCLCReader(TextReader):
                 raise Exception("Multiple existing players with name {0} and realm {1} found."
                                 .format(player_name, player_realm))
             else:
-                player = Player(name=player_name, realm=player_realm)
+                bnet = BNet()
+                player_info = bnet.create_character_profile(session, name=player_name, realm=player_realm)
+                player = Player(name=player_name, realm=player_realm, wow_class=player_info["class"])
                 session.add(player)
             item_info = self.unpack_item_string("Hitem:"+itemString)
             #RCLC output does not match the actual WoW item string format, it removes the starting "hitem",

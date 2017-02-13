@@ -3,6 +3,7 @@
 class DBConst:
     conn_str = 'sqlite:///db/deftools.db'
     test_conn_str = 'sqlite:///../src/db/deftools_test.db'
+    BNet_Key = "pcdpw9tpsyj4cqr6z8mg7ehpwpgwevaq"
 
 class ClassColours:
     dk_rgb = (196, 31, 59)
@@ -113,6 +114,68 @@ class Codes:
     difficulty_codes["mythic dungeon"] = 23
     difficulty_codes["timewalker"] = 24
     difficulty_codes["pvp scenario"] = 25
+
+    #Class Codes
+    class_codes = dict()
+    class_codes["WARRIOR"] = 1
+    class_codes["PALADIN"] = 2
+    class_codes["HUNTER"] = 3
+    class_codes["ROGUE"] = 4
+    class_codes["PRIEST"] = 5
+    class_codes["DEATHKNIGHT"] = 6
+    class_codes["SHAMAN"] = 7
+    class_codes["MAGE"] = 8
+    class_codes["WARLOCK"] = 9
+    class_codes["MONK"] = 10
+    class_codes["DRUID"] = 11
+    class_codes["DEMONHUNTER"] = 12
+
+    #Realm names, mapping from the output provided by RCLootCouncil to WoW API names
+    RC_BN = dict()
+
+    RC_BN["Aegwynn"] = "Aegwynn"
+    RC_BN["AeriePeak"] = "Aerie Peak"
+    RC_BN["Agmaggan"] = "Agmaggan"
+    RC_BN["Aggramar"] = "Aggramar"
+    RC_BN["Akama"] = "Akama"
+    RC_BN["Alexstrasza"] = "Alexstrasza"
+    RC_BN["Alleria"] = "Alleria"
+    RC_BN["AltarofStorms"] = "Alter of Storms"
+    RC_BN["AlteracMountains"] = "Alterac Mountains"
+    RC_BN["Aman'Thul"] = "Aman'Thul"
+    RC_BN["Andorhal"] = "Andorhal"
+    RC_BN["Anetheron"] = "Anetheron"
+    RC_BN["Antonidas"] = "Antonidas"
+    RC_BN["Anub'arak"] = "Anub'arak"
+    RC_BN["Anvilmar"] = "Anvilmar"
+    RC_BN["Arathor"] = "Arathor"
+    RC_BN["Archimonde"] = "Archimonde"
+    RC_BN["Area52"] = "Area 52"
+    RC_BN["ArgentDawn"] = "Argent Dawn"
+    RC_BN["Arthas"] = "Arthas"
+    RC_BN["Arygos"] = "Arygos"
+    RC_BN["Auchindoun"] = "Auchindoun"
+    RC_BN["Azgalor"] = "Azgalor"
+    RC_BN["Azjol-Nerub"] = "Azjol-Nerub"
+    RC_BN["Azralon"] = "Azralon"
+    RC_BN["Azshara"] = "Azshara"
+    RC_BN["Azuremyst"] = "Azuremyst"
+    RC_BN["Baelgun"] = "Baelgun"
+    RC_BN["Balnazzar"] = "Balnazzar"
+    RC_BN["Barthilas"] = "Barthilas"
+    RC_BN["BlackDragonflight"] = "Black Dragonflight"
+    RC_BN["Blackhand"] = "Blackhand"
+    RC_BN["Blackrock"] = "Blackrock"
+    RC_BN["BlackwaterRaiders"] = "Blackwater Raiders"
+    RC_BN["BlackwingLair"] = "Blackwing Lair"
+    RC_BN["Blade'sEdge"] = "Blade's Edge"
+    RC_BN["Bladefist"] = "Bladefist"
+    RC_BN["BleedingHollow"] = "Bleeding Hollow"
+    RC_BN["BloodFurnace"] = "Blood Furnace"
+    RC_BN["Bloodhoof"] = "Bloodhoof"
+    RC_BN["Bloodscalp"] = "Bloodscalp"
+    RC_BN["Bonechewer"] = "Bonechewer"
+    RC_BN["BoreanTundra"] = "Borean Tundra"
 
 
 

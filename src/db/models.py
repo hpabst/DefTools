@@ -11,8 +11,9 @@ Base = declarative_base()
 class Player(Base):
     __tablename__ = "player"
     id = Column(Integer, primary_key=True)
-    name = Column(String(250), nullable=False)
-    realm = Column(String(250), nullable=False)
+    name = Column(VARCHAR, nullable=False)
+    realm = Column(VARCHAR, nullable=False)
+    wow_class = Column(Integer)
     __table_args__ = (UniqueConstraint(name, realm, name='_name_realm_uc'),)
 
     def __repr__(self):
@@ -23,7 +24,7 @@ class Loot(Base):
     __tablename__ = "loot"
     id = Column(Integer, primary_key=True)
     item_id = Column(Integer) #actual ID of the item in-game
-    name = Column(String(250), default="Unknown")
+    name = Column(VARCHAR, default="Unknown")
     instance = Column(Integer) #zone the item comes from
     bonus_ids = relationship("BonusID")
 

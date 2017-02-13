@@ -51,7 +51,7 @@ class Open(Frame):
 
 
     def submit_text(self):
-        text = self.txtCsv.get("1.0", END)
+        text = self.txtTsv.get("1.0", END)
         reader = RCLCReader()
         session = Session()
         try:
