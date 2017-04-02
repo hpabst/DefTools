@@ -137,160 +137,164 @@ class RCLCReader(TextReader):
         :return: The LootAward objects created and added to the session.
         """
         objects = list()
+        failed_lines = list()
         lines = text.splitlines()
         for line in lines:
-            if line == u''\
-                or line == u'player	date	time	item	itemID	itemString	response' \
-                           u'	votes	class	instance	boss	gear1	gear2' \
-                           u'	responseID	isAwardReason':
-                continue
-            data = line.split("\t")
-            player_name = data[0].split("-")[0]
-            player_realm = data[0].split("-")[1]
-            date = datetime.strptime(data[1], "%d/%m/%y")
-            time = data[2]
-            itemHL = data[3]
-            itemID = int(data[4])
-            itemString = data[5]
-            response = data[6]
-            votes = data[7]
-            wow_class = data[8]
-            instance = data[9]
-            boss = data[10]
-            gear1HL = data[11]
-            gear2HL = data[12]
-            responseID = data[13]
-            isAwardReason = data[14]
+            try:
+                if line == u''\
+                    or line == u'player	date	time	item	itemID	itemString	response' \
+                               u'	votes	class	instance	boss	gear1	gear2' \
+                               u'	responseID	isAwardReason':
+                    continue
+                data = line.split("\t")
+                player_name = data[0].split("-")[0]
+                player_realm = data[0].split("-")[1]
+                date = datetime.strptime(data[1], "%d/%m/%y")
+                time = data[2]
+                itemHL = data[3]
+                itemID = int(data[4])
+                itemString = data[5]
+                response = data[6]
+                votes = data[7]
+                wow_class = data[8]
+                instance = data[9]
+                boss = data[10]
+                gear1HL = data[11]
+                gear2HL = data[12]
+                responseID = data[13]
+                isAwardReason = data[14]
 
-            item_name = itemHL.split(",")[1]
-            item_name = item_name[1:-2]
+                item_name = itemHL.split(",")[1]
+                item_name = item_name[1:-2]
 
-            gearIDregex = "wowhead.com/item=([0-9]+)"
-            gearBonusRegex = "&bonus=([0-9-:]+)"
-            gear1_name = gear1HL.split("\",")[1]
-            gear1_name = gear1_name[1:-2]
-            if gear1_name != u"nil":
-                gear1IDgroups = re.search(gearIDregex, gear1HL)
-                gear1ID = int(gear1IDgroups.group(1))
-                gear1BonusGroups = re.search(gearBonusRegex, gear1HL)
-                if gear1BonusGroups is not None:
-                    gear1_bonus_IDs = gear1BonusGroups.group(1).split(":")
-                    gear1_bonus_IDs = [int(i) for i in gear1_bonus_IDs]
+                gearIDregex = "wowhead.com/item=([0-9]+)"
+                gearBonusRegex = "&bonus=([0-9-:]+)"
+                gear1_name = gear1HL.split("\",")[1]
+                gear1_name = gear1_name[1:-2]
+                if gear1_name != u"nil":
+                    gear1IDgroups = re.search(gearIDregex, gear1HL)
+                    gear1ID = int(gear1IDgroups.group(1))
+                    gear1BonusGroups = re.search(gearBonusRegex, gear1HL)
+                    if gear1BonusGroups is not None:
+                        gear1_bonus_IDs = gear1BonusGroups.group(1).split(":")
+                        gear1_bonus_IDs = [int(i) for i in gear1_bonus_IDs]
+                    else:
+                        gear1_bonus_IDs = list()
+
+                gear2_name = gear2HL.split("\",")[1]
+                gear2_name = gear2_name[1:-2]
+                if gear2_name != u"nil":
+                    gear2IDgroups = re.search(gearIDregex, gear2HL)
+                    gear2ID = int(gear2IDgroups.group(1))
+                    gear2BonusGroups = re.search(gearBonusRegex, gear2HL)
+                    if gear2BonusGroups is not None:
+                        gear2_bonus_IDs = gear2BonusGroups.group(1).split(":")
+                        gear2_bonus_IDs = [int(i) for i in gear2_bonus_IDs]
+                    else:
+                        gear2_bonus_IDs = list()
+
+                instance_id = Codes.instance_codes[instance.split("-")[0].lower()]
+                player = None
+                existing_player = session.query(Player)\
+                    .filter(Player.name == player_name, Player.realm == player_realm).all()
+                if len(existing_player) == 1:
+                    player = existing_player[0]
+                elif len(existing_player) > 1:
+                    raise Exception("Multiple existing players with name {0} and realm {1} found."
+                                    .format(player_name, player_realm))
                 else:
-                    gear1_bonus_IDs = list()
+                    bnet = BNet()
+                    player_info = bnet.create_character_profile(session, name=player_name, realm=player_realm)
+                    player = Player(name=player_name, realm=player_realm, wow_class=player_info["class"])
+                    session.add(player)
+                item_info = self.unpack_item_string("Hitem:"+itemString)
+                #RCLC output does not match the actual WoW item string format, it removes the starting "hitem",
+                #we add it here to preserve the purity of unpack_item_string
 
-            gear2_name = gear2HL.split("\",")[1]
-            gear2_name = gear2_name[1:-2]
-            if gear2_name != u"nil":
-                gear2IDgroups = re.search(gearIDregex, gear2HL)
-                gear2ID = int(gear2IDgroups.group(1))
-                gear2BonusGroups = re.search(gearBonusRegex, gear2HL)
-                if gear2BonusGroups is not None:
-                    gear2_bonus_IDs = gear2BonusGroups.group(1).split(":")
-                    gear2_bonus_IDs = [int(i) for i in gear2_bonus_IDs]
-                else:
-                    gear2_bonus_IDs = list()
+                new_award = LootAward(reason=response, player_rel=player, award_date=date)
+                session.add(new_award)
 
-            instance_id = Codes.instance_codes[instance.split("-")[0].lower()]
-            player = None
-            existing_player = session.query(Player)\
-                .filter(Player.name == player_name, Player.realm == player_realm).all()
-            if len(existing_player) == 1:
-                player = existing_player[0]
-            elif len(existing_player) > 1:
-                raise Exception("Multiple existing players with name {0} and realm {1} found."
-                                .format(player_name, player_realm))
-            else:
-                bnet = BNet()
-                player_info = bnet.create_character_profile(session, name=player_name, realm=player_realm)
-                player = Player(name=player_name, realm=player_realm, wow_class=player_info["class"])
-                session.add(player)
-            item_info = self.unpack_item_string("Hitem:"+itemString)
-            #RCLC output does not match the actual WoW item string format, it removes the starting "hitem",
-            #we add it here to preserve the purity of unpack_item_string
-
-            new_award = LootAward(reason=response, player_rel=player, award_date=date)
-            session.add(new_award)
-
-            existing_items = session.query(Loot).filter(Loot.item_id == itemID).all()
-            item_info["bonusIDs"] = [int(i) for i in item_info["bonusIDs"]]
-            matching = list()
-            for item in existing_items:
-                all_matching = True
-                if len(item.bonus_ids) != len(item_info["bonusIDs"]):
-                    all_matching = False
-                for id in item.bonus_ids:
-                    if id.bonus_id not in item_info["bonusIDs"]:
-                        all_matching = False
-                        break
-                if all_matching:
-                    matching.append(item)
-            if len(matching) == 1:
-                new_award.item_rel = matching[0]
-            elif len(matching) > 1:
-                raise Exception("Multiple loot instances of item {0} with bonus IDs {1} found."
-                                .format(matching[0].item_id, item_info["bonusIDs"]))
-            else:
-                new_item = Loot(item_id = itemID, instance = instance_id, name=item_name)
-                session.add(new_item)
-                new_award.item_rel = new_item
-                for id in item_info["bonusIDs"]:
-                    new_item.bonus_ids.append(BonusID(bonus_id=id))
-
-            #We just get wowhead hyperlinks instead of item strings for the gear replacement, so itemID
-            #and bonus IDs extraction is different than how we do it with the awarded item.
-
-            if gear1_name != u"nil":
-                existing_gear1 = session.query(Loot).filter(Loot.item_id == gear1ID).all()
+                existing_items = session.query(Loot).filter(Loot.item_id == itemID).all()
+                item_info["bonusIDs"] = [int(i) for i in item_info["bonusIDs"]]
                 matching = list()
-                for item in existing_gear1:
+                for item in existing_items:
                     all_matching = True
-                    if len(item.bonus_ids) != len(gear1_bonus_IDs):
+                    if len(item.bonus_ids) != len(item_info["bonusIDs"]):
                         all_matching = False
                     for id in item.bonus_ids:
-                        if id.bonus_id not in gear1_bonus_IDs:
+                        if id.bonus_id not in item_info["bonusIDs"]:
                             all_matching = False
                             break
                     if all_matching:
                         matching.append(item)
                 if len(matching) == 1:
-                    new_award.replacement1_rel = matching[0]
+                    new_award.item_rel = matching[0]
                 elif len(matching) > 1:
                     raise Exception("Multiple loot instances of item {0} with bonus IDs {1} found."
-                                    .format(matching[0].item_id, gear1_bonus_IDs))
+                                    .format(matching[0].item_id, item_info["bonusIDs"]))
                 else:
-                    new_gear1 = Loot(item_id = gear1ID, instance = -1, name=gear1_name)
-                    session.add(new_gear1)
-                    new_award.replacement1_rel = new_gear1
-                    for id in gear1_bonus_IDs:
-                        new_gear1.bonus_ids.append(BonusID(bonus_id=id))
+                    new_item = Loot(item_id = itemID, instance = instance_id, name=item_name)
+                    session.add(new_item)
+                    new_award.item_rel = new_item
+                    for id in item_info["bonusIDs"]:
+                        new_item.bonus_ids.append(BonusID(bonus_id=id))
 
-            if gear2_name != u"nil":
-                existing_gear2 = session.query(Loot).filter(Loot.item_id == gear2ID).all()
-                matching = list()
-                for item in existing_gear2:
-                    all_matching = True
-                    if len(item.bonus_ids) != len(gear2_bonus_IDs):
-                        all_matching = False
-                    for id in item.bonus_ids:
-                        if id.bonus_id not in gear2_bonus_IDs:
+                #We just get wowhead hyperlinks instead of item strings for the gear replacement, so itemID
+                #and bonus IDs extraction is different than how we do it with the awarded item.
+
+                if gear1_name != u"nil":
+                    existing_gear1 = session.query(Loot).filter(Loot.item_id == gear1ID).all()
+                    matching = list()
+                    for item in existing_gear1:
+                        all_matching = True
+                        if len(item.bonus_ids) != len(gear1_bonus_IDs):
                             all_matching = False
-                            break
-                    if all_matching:
-                        matching.append(item)
-                if len(matching) == 1:
-                    new_award.replacement2_rel = matching[0]
-                elif len(matching) > 1:
-                    raise Exception("Multiple loot instances of item {0} with bonus IDs {1} found."
-                                    .format(matching[0].item_id, gear2_bonus_IDs))
-                else:
-                    new_gear2 = Loot(item_id = gear2ID, instance = -1, name=gear2_name)
-                    session.add(new_gear2)
-                    new_award.replacement2_rel = new_gear2
-                    for id in gear2_bonus_IDs:
-                        new_gear2.bonus_ids.append(BonusID(bonus_id=id))
-            objects.append(new_award)
-        return objects
+                        for id in item.bonus_ids:
+                            if id.bonus_id not in gear1_bonus_IDs:
+                                all_matching = False
+                                break
+                        if all_matching:
+                            matching.append(item)
+                    if len(matching) == 1:
+                        new_award.replacement1_rel = matching[0]
+                    elif len(matching) > 1:
+                        raise Exception("Multiple loot instances of item {0} with bonus IDs {1} found."
+                                        .format(matching[0].item_id, gear1_bonus_IDs))
+                    else:
+                        new_gear1 = Loot(item_id = gear1ID, instance = -1, name=gear1_name)
+                        session.add(new_gear1)
+                        new_award.replacement1_rel = new_gear1
+                        for id in gear1_bonus_IDs:
+                            new_gear1.bonus_ids.append(BonusID(bonus_id=id))
+
+                if gear2_name != u"nil":
+                    existing_gear2 = session.query(Loot).filter(Loot.item_id == gear2ID).all()
+                    matching = list()
+                    for item in existing_gear2:
+                        all_matching = True
+                        if len(item.bonus_ids) != len(gear2_bonus_IDs):
+                            all_matching = False
+                        for id in item.bonus_ids:
+                            if id.bonus_id not in gear2_bonus_IDs:
+                                all_matching = False
+                                break
+                        if all_matching:
+                            matching.append(item)
+                    if len(matching) == 1:
+                        new_award.replacement2_rel = matching[0]
+                    elif len(matching) > 1:
+                        raise Exception("Multiple loot instances of item {0} with bonus IDs {1} found."
+                                        .format(matching[0].item_id, gear2_bonus_IDs))
+                    else:
+                        new_gear2 = Loot(item_id = gear2ID, instance = -1, name=gear2_name)
+                        session.add(new_gear2)
+                        new_award.replacement2_rel = new_gear2
+                        for id in gear2_bonus_IDs:
+                            new_gear2.bonus_ids.append(BonusID(bonus_id=id))
+                objects.append(new_award)
+            except Exception as e:
+                failed_lines.append("Line: {0}\nError: {1}\n".format(line, str(e) + e.message))
+        return objects, failed_lines
 
 
 

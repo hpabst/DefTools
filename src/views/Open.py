@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session
 import ConfigParser
 import re
 import tkMessageBox
+import sys
+import traceback
 
 class Open(Frame):
 
@@ -55,10 +57,18 @@ class Open(Frame):
         reader = RCLCReader()
         session = Session()
         try:
-            db_objects = reader.read_tsv_text(text, session)
+            db_objects, failed_lines = reader.read_tsv_text(text, session)
             session.commit()
+            if len(failed_lines) > 0:
+                errormsg = "{0} lines raised an error when reading data:\n".format(len(failed_lines))
+                for line in failed_lines:
+                    errormsg += line
+                tkMessageBox.showerror("Error", errormsg)
+            else:
+                tkMessageBox.showinfo("Data Submission Complete", "All data has been submitted to DB successfully.")
         except Exception as e:
-            tkMessageBox.showerror("Error", "An error occured in reading the data: {0}.".format(e.message))
+            ex_type, ex, tb = sys.exc_info()
+            tkMessageBox.showerror("Error", "An error occured in reading the data: {0} {1}.\nTraceback: {2}.".format(e.message, str(e), traceback.format_tb(tb)))
         return
 
 
