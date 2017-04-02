@@ -38,6 +38,8 @@ class TextReader():
         iteminfo["bonusIDs"] = list()
         index = 14
         for i in range(0, int(iteminfo["numBonusIDs"])):
-            iteminfo["bonusIDs"].append(splititem[index])
+            newid = splititem[index]
+            if newid not in iteminfo["bonusIDs"]:#Have to check due to rare error where item will have same bonus ID twice.
+                iteminfo["bonusIDs"].append(newid)
             index += 1
         return iteminfo

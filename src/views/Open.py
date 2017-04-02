@@ -69,7 +69,10 @@ class Open(Frame):
         if len(id.groups()) == 0:
             tkMessageBox.showerror("Error", "A valid google sheet ID could not be determined.")
         else:
-            writer = GSheetsWriter(spreadsheet_id=id.group(1))
-            writer.update_loot_spreadsheet(session)
+            try:
+                writer = GSheetsWriter(spreadsheet_id=id.group(1))
+                writer.update_loot_spreadsheet(session)
+            except Exception as e:
+                tkMessageBox.showerror("Error", "An error occurred in uploading to google sheets: {0}".format(e.message))
             tkMessageBox.showinfo("", "Loot data has been uploaded to google spreadsheet.")
         return

@@ -46,10 +46,17 @@ class GSheetsWriter:
         body = {
             'requests': requests
         }
-        try:
-            response = self.__service.spreadsheets().batchUpdate(spreadsheetId=self.ss_id, body=body).execute()
-        except HttpError as h:
-            raise h
+        print("Delete request size: {0}.".format(len(requests)))
+        backoff = 2
+        while backoff < 256:
+            try:
+                response = self.__service.spreadsheets().batchUpdate(spreadsheetId=self.ss_id, body=body).execute()
+                break
+            except HttpError as h:
+                time.sleep(backoff)
+                backoff = backoff * backoff
+                if backoff >= 256:
+                    raise h
         return
 
     def __get__cell_borders_request(self, sheetId, start_row_index = 0, end_row_index = 6,
@@ -195,11 +202,18 @@ class GSheetsWriter:
             'valueInputOption': 'USER_ENTERED',
             'data': data
         }
-        try:
-            result = self.__service.spreadsheets().values().batchUpdate(spreadsheetId=self.ss_id,
-                                                                        body=body).execute()
-        except HttpError as h:
-            raise h
+        backoff = 2
+        while backoff < 256:
+            try:
+                result = self.__service.spreadsheets().values().batchUpdate(spreadsheetId=self.ss_id,
+                                                                            body=body).execute()
+                break
+            except HttpError as h:
+                time.sleep(backoff)
+                print("Backoff {0}".format(backoff))
+                backoff = backoff * backoff
+                if backoff >= 256:
+                    raise h
         style_requests.append(self.__get_header_row_style_request(sheetId=maindata_id))
         style_requests.append(self.__get_header_row_style_request(sheetId=maindata_id, startIndex=7, endIndex=11))
         style_requests.append(self.__get_column_width_request(sheetId=maindata_id))
@@ -214,11 +228,18 @@ class GSheetsWriter:
         body = {
             "requests":style_requests
         }
-        try:
-            result = self.__service.spreadsheets().batchUpdate(spreadsheetId=self.ss_id,
-                                                               body=body).execute()
-        except HttpError as h:
-            raise h
+        backoff = 2
+        while backoff < 256:
+            try:
+                result = self.__service.spreadsheets().batchUpdate(spreadsheetId=self.ss_id,
+                                                                   body=body).execute()
+                break
+            except HttpError as h:
+                time.sleep(backoff)
+                print("Backoff {0}".format(backoff))
+                backoff = backoff * backoff
+                if backoff >= 256:
+                    raise h
         return
 
     def __create_all_user_sheets(self, session):
@@ -232,10 +253,17 @@ class GSheetsWriter:
         body = {
             "requests":style_requests
         }
-        try:
-            response = self.__service.spreadsheets().batchUpdate(spreadsheetId=self.ss_id, body=body).execute()
-        except HttpError as h:
-            raise h
+        backoff = 2
+        while backoff < 256:
+            try:
+                response = self.__service.spreadsheets().batchUpdate(spreadsheetId=self.ss_id, body=body).execute()
+                break
+            except HttpError as h:
+                time.sleep(backoff)
+                print("Backoff {0}".format(backoff))
+                backoff = backoff * backoff
+                if backoff >= 256:
+                    raise h
         return
 
     def __create_user_sheet(self, session, user):
@@ -252,10 +280,17 @@ class GSheetsWriter:
         body = {
             "requests":request
         }
-        try:
-            response = self.__service.spreadsheets().batchUpdate(spreadsheetId=self.ss_id, body=body).execute()
-        except HttpError as h:
-            raise h
+        backoff = 2
+        while backoff < 256:
+            try:
+                response = self.__service.spreadsheets().batchUpdate(spreadsheetId=self.ss_id, body=body).execute()
+                break
+            except HttpError as h:
+                time.sleep(backoff)
+                print("Backoff {0}".format(backoff))
+                backoff = backoff * backoff
+                if backoff >= 256:
+                    raise h
         sheetID = response.get("replies")[0].get("addSheet").get("properties").get("sheetId")
         awards = session.query(LootAward).filter(LootAward.player_rel == user).order_by(LootAward.award_date).all()
         row_counter = 2
@@ -288,22 +323,36 @@ class GSheetsWriter:
             'valueInputOption':'USER_ENTERED',
             'data':data
         }
-        try:
-            response = self.__service.spreadsheets().values().batchUpdate(spreadsheetId=self.ss_id,
-                                                                        body=body).execute()
-        except HttpError as h:
-            raise h
+        backoff = 2
+        while backoff < 256:
+            try:
+                response = self.__service.spreadsheets().values().batchUpdate(spreadsheetId=self.ss_id,
+                                                                            body=body).execute()
+                break
+            except HttpError as h:
+                time.sleep(backoff)
+                print("Backoff {0}".format(backoff))
+                backoff = backoff * backoff
+                if backoff >= 256:
+                    raise h
         border_request = []
         border_request.append(self.__get__cell_borders_request(sheetId=sheetID,start_row_index=1,
                                                                 end_row_index=row_counter-1))
         body = {
             "requests":border_request
         }
-        try:
-            response = self.__service.spreadsheets().batchUpdate(spreadsheetId=self.ss_id,
-                                                                        body=body).execute()
-        except HttpError as h:
-            raise h
+        backoff = 2
+        while backoff < 256:
+            try:
+                response = self.__service.spreadsheets().batchUpdate(spreadsheetId=self.ss_id,
+                                                                            body=body).execute()
+                break
+            except HttpError as h:
+                time.sleep(backoff)
+                print("Backoff {0}".format(backoff))
+                backoff = backoff * backoff
+                if backoff >= 256:
+                    raise h
         return sheetID
 
 

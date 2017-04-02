@@ -173,8 +173,11 @@ class RCLCReader(TextReader):
                 gear1IDgroups = re.search(gearIDregex, gear1HL)
                 gear1ID = int(gear1IDgroups.group(1))
                 gear1BonusGroups = re.search(gearBonusRegex, gear1HL)
-                gear1_bonus_IDs = gear1BonusGroups.group(1).split(":")
-                gear1_bonus_IDs = [int(i) for i in gear1_bonus_IDs]
+                if gear1BonusGroups is not None:
+                    gear1_bonus_IDs = gear1BonusGroups.group(1).split(":")
+                    gear1_bonus_IDs = [int(i) for i in gear1_bonus_IDs]
+                else:
+                    gear1_bonus_IDs = list()
 
             gear2_name = gear2HL.split("\",")[1]
             gear2_name = gear2_name[1:-2]
@@ -182,8 +185,11 @@ class RCLCReader(TextReader):
                 gear2IDgroups = re.search(gearIDregex, gear2HL)
                 gear2ID = int(gear2IDgroups.group(1))
                 gear2BonusGroups = re.search(gearBonusRegex, gear2HL)
-                gear2_bonus_IDs = gear2BonusGroups.group(1).split(":")
-                gear2_bonus_IDs = [int(i) for i in gear2_bonus_IDs]
+                if gear2BonusGroups is not None:
+                    gear2_bonus_IDs = gear2BonusGroups.group(1).split(":")
+                    gear2_bonus_IDs = [int(i) for i in gear2_bonus_IDs]
+                else:
+                    gear2_bonus_IDs = list()
 
             instance_id = Codes.instance_codes[instance.split("-")[0].lower()]
             player = None
@@ -211,6 +217,8 @@ class RCLCReader(TextReader):
             matching = list()
             for item in existing_items:
                 all_matching = True
+                if len(item.bonus_ids) != len(item_info["bonusIDs"]):
+                    all_matching = False
                 for id in item.bonus_ids:
                     if id.bonus_id not in item_info["bonusIDs"]:
                         all_matching = False
@@ -237,6 +245,8 @@ class RCLCReader(TextReader):
                 matching = list()
                 for item in existing_gear1:
                     all_matching = True
+                    if len(item.bonus_ids) != len(gear1_bonus_IDs):
+                        all_matching = False
                     for id in item.bonus_ids:
                         if id.bonus_id not in gear1_bonus_IDs:
                             all_matching = False
@@ -260,6 +270,8 @@ class RCLCReader(TextReader):
                 matching = list()
                 for item in existing_gear2:
                     all_matching = True
+                    if len(item.bonus_ids) != len(gear2_bonus_IDs):
+                        all_matching = False
                     for id in item.bonus_ids:
                         if id.bonus_id not in gear2_bonus_IDs:
                             all_matching = False
