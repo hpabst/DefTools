@@ -1,7 +1,7 @@
 
 
 class DBConst:
-    conn_str = 'sqlite:///db/deftools.db'
+    conn_str = 'sqlite:///deftools.db'
     test_conn_str = 'sqlite:///../src/db/deftools_test.db'
     BNet_Key = "pcdpw9tpsyj4cqr6z8mg7ehpwpgwevaq"
 

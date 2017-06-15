@@ -1,5 +1,5 @@
 from Tkinter import *
-from ttk import Frame, Button, Style, Entry, Scale
+from ttk import Frame, Button, Entry
 from models.rclc_reader import RCLCReader
 from models.gsheets_writer import GSheetsWriter
 from sqlalchemy.orm import Session
@@ -8,6 +8,7 @@ import re
 import tkMessageBox
 import sys
 import traceback
+import threading
 
 class Open(Frame):
 
@@ -40,7 +41,7 @@ class Open(Frame):
         self.btnUpload = Button(self, text="Upload to GS", command = self.upload_db)
         self.btnUpload.grid(row=6, column=3, padx=5)
 
-        self.btnCancel = Button(self, command=quit, text="Quit")
+        self.btnCancel = Button(self, command=sys.exit, text="Quit")
         self.btnCancel.grid(row=6, column=2, padx=5)
 
         self.lblSheet = Label(self, text="Enter google sheets URL:")
@@ -79,10 +80,25 @@ class Open(Frame):
         if len(id.groups()) == 0:
             tkMessageBox.showerror("Error", "A valid google sheet ID could not be determined.")
         else:
+            config = ConfigParser.ConfigParser()
+            config.read('settings.ini')
+            config.set('USER', 'default_spreadsheet', self.sheetUrl.get())
+            fp = open('settings.ini', 'w+')
+            config.write(fp)
+            fp.close()
             try:
                 writer = GSheetsWriter(spreadsheet_id=id.group(1))
                 writer.update_loot_spreadsheet(session)
             except Exception as e:
+                fp = open("delete_error.txt", "w+")
+                ex_type, ex, tb = sys.exc_info()
+                fp.write(str(ex_type))
+                traceback.print_tb(tb, file=fp)
+                fp.write(str(e.args) + "\n")
+                fp.write(str(e) + "\n")
+                fp.write(e.message + "\n")
+                fp.flush()
+                fp.close()
                 tkMessageBox.showerror("Error", "An error occurred in uploading to google sheets: {0}".format(e.message))
             tkMessageBox.showinfo("", "Loot data has been uploaded to google spreadsheet.")
         return

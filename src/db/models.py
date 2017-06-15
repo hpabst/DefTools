@@ -62,6 +62,10 @@ class LootAward(Base):
         return "<LootAward(item='{0}', reason='{1}', player='{2}')>".format(self.item, self.reason, self.player)
 
 
-if __name__ == "__main__":
+def create_db():
     engine = create_engine('sqlite:///deftools.db')
     Base.metadata.create_all(engine)
+    return
+
+if __name__ == "__main__":
+    create_db()
