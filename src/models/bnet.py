@@ -24,6 +24,12 @@ class BNet:
             fixed_realm = fixed_realm.replace(" ","%20")
         url_format = url_format.format(fixed_realm, name, DBConst.BNet_Key)
         url_format = url_format.encode('utf-8')
-        response = urllib2.urlopen(url_format).read()
-        data = json.loads(response)
+        try:
+            response = urllib2.urlopen(url_format).read()
+            data = json.loads(response)
+        except Exception as e:
+            data = dict()
+            data["player_class"] = "Unknown"
+            data["player_name"] = name
+            data["player_realm"] = realm
         return data

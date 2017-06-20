@@ -6,6 +6,7 @@ from bnet import BNet
 from sqlalchemy.orm import Session
 import warnings
 import re
+import sys, traceback
 
 """
 Parse data and return relevant LootAward objects based on CSV format from
@@ -212,7 +213,7 @@ class RCLCReader(TextReader):
                 #we add it here to preserve the purity of unpack_item_string
 
                 new_award = LootAward(reason=response, player_rel=player, award_date=date)
-                session.add(new_award)
+                ##session.add(new_award)
 
                 existing_items = session.query(Loot).filter(Loot.item_id == itemID).all()
                 item_info["bonusIDs"] = [int(i) for i in item_info["bonusIDs"]]
@@ -291,8 +292,17 @@ class RCLCReader(TextReader):
                         new_award.replacement2_rel = new_gear2
                         for id in gear2_bonus_IDs:
                             new_gear2.bonus_ids.append(BonusID(bonus_id=id))
-                objects.append(new_award)
+                #Check if the exact same award has already been made.
+                existing_awards = session.query(LootAward).filter(LootAward.item_rel == new_award.item_rel,
+                                                                  LootAward.replacement1_rel == new_award.replacement1_rel,
+                                                                  LootAward.replacement2_rel == new_award.replacement2_rel,
+                                                                  LootAward.player_rel == new_award.player_rel).all()
+                if len(existing_awards) == 0:
+                    objects.append(new_award)
+                    session.add(new_award)
             except Exception as e:
+                ex_type, ex, tb = sys.exc_info()
+                traceback.print_tb(tb)
                 failed_lines.append("Line: {0}\nError: {1}\n".format(line, str(e) + e.message))
         return objects, failed_lines
 
